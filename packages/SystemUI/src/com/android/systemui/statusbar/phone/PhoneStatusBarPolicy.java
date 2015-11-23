@@ -62,7 +62,7 @@ import cyanogenmod.providers.CMSettings;
 public class PhoneStatusBarPolicy implements Callback, RotationLockController.RotationLockControllerCallback, DataSaverController.Listener {
     private static final String TAG = "PhoneStatusBarPolicy";
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
-
+	
     private final String mSlotCast;
     private final String mSlotHotspot;
     private final String mSlotBluetooth;
@@ -75,6 +75,7 @@ public class PhoneStatusBarPolicy implements Callback, RotationLockController.Ro
     private final String mSlotHeadset;
     private final String mSlotDataSaver;
     private final String mSlotSu;
+	private final String mSlotHeadsetIcon;
 
     private final Context mContext;
     private final Handler mHandler = new Handler();
@@ -134,6 +135,7 @@ public class PhoneStatusBarPolicy implements Callback, RotationLockController.Ro
                 com.android.internal.R.string.status_bar_managed_profile);
         mSlotRotate = context.getString(com.android.internal.R.string.status_bar_rotate);
         mSlotHeadset = context.getString(com.android.internal.R.string.status_bar_headset);
+		mSlotHeadsetIcon = context.getString(com.android.internal.R.string.status_bar_headset);
         mSlotDataSaver = context.getString(com.android.internal.R.string.status_bar_data_saver);
         mSlotSu = context.getString(com.android.internal.R.string.status_bar_su);
         mRotationLockController.addRotationLockControllerCallback(this);
@@ -144,6 +146,7 @@ public class PhoneStatusBarPolicy implements Callback, RotationLockController.Ro
         filter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
         filter.addAction(AudioManager.INTERNAL_RINGER_MODE_CHANGED_ACTION);
         filter.addAction(AudioManager.ACTION_HEADSET_PLUG);
+		filter.addAction(Intent.ACTION_HEADSET_PLUG);
         filter.addAction(TelephonyIntents.ACTION_SIM_STATE_CHANGED);
         filter.addAction(TelecomManager.ACTION_CURRENT_TTY_MODE_CHANGED);
         filter.addAction(Intent.ACTION_MANAGED_PROFILE_AVAILABLE);
@@ -178,6 +181,10 @@ public class PhoneStatusBarPolicy implements Callback, RotationLockController.Ro
         mIconController.setIcon(mSlotZen, R.drawable.stat_sys_zen_important, null);
         mIconController.setIconVisibility(mSlotZen, false);
 
+		// headset
+        mIconController.setIcon(mSlotHeadsetIcon, R.drawable.stat_sys_headset, null);
+        mIconController.setIconVisibility(mSlotHeadsetIcon, false);
+		
         // volume
         mIconController.setIcon(mSlotVolume, R.drawable.stat_sys_ringer_vibrate, null);
         mIconController.setIconVisibility(mSlotVolume, false);
@@ -214,6 +221,11 @@ public class PhoneStatusBarPolicy implements Callback, RotationLockController.Ro
     public void setStatusBarKeyguardViewManager(
             StatusBarKeyguardViewManager statusBarKeyguardViewManager) {
         mStatusBarKeyguardViewManager = statusBarKeyguardViewManager;
+    }
+	
+    private final void updateHeadset(Intent intent) {
+        int state = intent.getIntExtra("state", 0);
+        mIconController.setIconVisibility(mSlotHeadsetIcon, state == 1 ? true : false);
     }
 
     public void setZenMode(int zen) {
@@ -613,6 +625,9 @@ public class PhoneStatusBarPolicy implements Callback, RotationLockController.Ro
                 updateHeadsetPlug(intent);
             } else if (action.equals(BluetoothHeadset.ACTION_VENDOR_SPECIFIC_HEADSET_EVENT)) {
                 updateBluetoothBattery(intent);
+            }
+			  else if (action.equals(Intent.ACTION_HEADSET_PLUG)) {
+                updateHeadset(intent);
             }
         }
     };
