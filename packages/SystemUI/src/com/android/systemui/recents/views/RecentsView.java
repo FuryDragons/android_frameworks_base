@@ -30,6 +30,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.ArraySet;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.AppTransitionAnimationSpec;
 import android.view.IAppTransitionAnimationSpecsFuture;
 import android.view.LayoutInflater;
@@ -41,6 +42,7 @@ import android.view.ViewPropertyAnimator;
 import android.view.WindowInsets;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.ImageButton;
 
 import com.android.internal.logging.MetricsLogger;
 import com.android.internal.logging.MetricsProto.MetricsEvent;
@@ -117,6 +119,10 @@ public class RecentsView extends FrameLayout {
     private RecentsViewTouchHandler mTouchHandler;
     private final FlingAnimationUtils mFlingAnimationUtils;
 
+	View mFloatingButton;
+ 	View mClearRecents;
+ 	private int clearRecentsLocation;
+	
     public RecentsView(Context context) {
         this(context, null);
     }
@@ -142,7 +148,10 @@ public class RecentsView extends FrameLayout {
                 ? GRID_LAYOUT_SCRIM_ALPHA : DEFAULT_SCRIM_ALPHA;
         mBackgroundScrim = new ColorDrawable(
                 Color.argb((int) (mScrimAlpha * 255), 0, 0, 0)).mutate();
-
+		
+		boolean showClearAllRecents = Settings.System.getIntForUser(mContext.getContentResolver(),
+               Settings.System.SHOW_CLEAR_ALL_RECENTS, 0, UserHandle.USER_CURRENT) != 0;
+ 
         LayoutInflater inflater = LayoutInflater.from(context);
         if (RecentsDebugFlags.Static.EnableStackActionButton) {
             mStackActionButton = (TextView) inflater.inflate(R.layout.recents_stack_action_button,
@@ -154,11 +163,29 @@ public class RecentsView extends FrameLayout {
                 }
             });
             addView(mStackActionButton);
-        }
+			}
+
+        if (mStackActionButton != null) {
+ 			if (showClearAllRecents) {
+ 			mStackActionButton.setVisibility(View.GONE);
+ 			} else {
+ 			mStackActionButton.setVisibility(View.VISIBLE);
+ 			}
+ 					
+	    }
         mEmptyView = (TextView) inflater.inflate(R.layout.recents_empty, this, false);
         addView(mEmptyView);
-    }
-
+ 
+        mClearRecents = ((View)getParent()).findViewById(R.id.clear_recents);
+         mFloatingButton = ((View)getParent()).findViewById(R.id.floating_action_button);
+ 		mClearRecents.setVisibility(View.VISIBLE);
+ 		mClearRecents.setOnClickListener(new View.OnClickListener() {
+           	public void onClick(View v) {
+                 	EventBus.getDefault().send(new DismissAllTaskViewsEvent());
+                 	updateMemoryStatus();
+             		}
+	}
+	
     /**
      * Called from RecentsActivity when it is relaunched.
      */
@@ -357,7 +384,44 @@ public class RecentsView extends FrameLayout {
         }
 
         setMeasuredDimension(width, height);
-    }
+        boolean showClearAllRecents = Settings.System.getIntForUser(mContext.getContentResolver(),
+                 Settings.System.SHOW_CLEAR_ALL_RECENTS, 0, UserHandle.USER_CURRENT) != 0;
+ 
+       if (mFloatingButton != null && showClearAllRecents) {
+         clearRecentsLocation = Settings.System.getIntForUser(
+                 mContext.getContentResolver(), Settings.System.RECENTS_CLEAR_ALL_LOCATION,
+            		3, UserHandle.USER_CURRENT);
+         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams)
+                     mFloatingButton.getLayoutParams();
+         params.topMargin = mContext.getResources().
+                     getDimensionPixelSize(com.android.internal.R.dimen.status_bar_height);
+ 
+             switch (clearRecentsLocation) {
+                 case 0:
+                     params.gravity = Gravity.TOP | Gravity.RIGHT;
+                     break;
+                 case 1:
+                     params.gravity = Gravity.TOP | Gravity.LEFT;
+                     break;
+                 case 2:
+                     params.gravity = Gravity.TOP | Gravity.CENTER;
+                     break;
+                 case 3:
+                 default:
+                     params.gravity = Gravity.BOTTOM | Gravity.RIGHT;
+                     break;
+                 case 4:
+                     params.gravity = Gravity.BOTTOM | Gravity.LEFT;
+                     break;
+                 case 5:
+                     params.gravity = Gravity.BOTTOM | Gravity.CENTER;
+                     break;
+             }
+             mFloatingButton.setLayoutParams(params);
+         } else {
+             mFloatingButton.setVisibility(View.GONE);
+         }
+ 
 
     /**
      * This is called with the full size of the window since we are handling our own insets.
