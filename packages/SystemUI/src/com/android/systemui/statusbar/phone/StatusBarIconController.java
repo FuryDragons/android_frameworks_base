@@ -28,6 +28,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.TypedValue;
@@ -80,6 +81,8 @@ public class StatusBarIconController extends StatusBarIconList implements Tunabl
     private BatteryMeterView mBatteryMeterViewKeyguard;
     private ClockController mClockController;
     private View mCenterClockLayout;
+	private ImageView mFdsLogoRight;
+    private ImageView mFdsLogoLeft;
 
     private int mIconSize;
     private int mIconHPadding;
@@ -144,6 +147,8 @@ public class StatusBarIconController extends StatusBarIconList implements Tunabl
         mHandler = new Handler();
         mClockController = new ClockController(statusBar, mNotificationIconAreaController, mHandler);
         mCenterClockLayout = statusBar.findViewById(R.id.center_clock_layout);
+		mFdsLogoRight = (ImageView) statusBar.findViewById(R.id.fds_logo);
+        mFdsLogoLeft = (ImageView) statusBar.findViewById(R.id.left_fds_logo);
         loadDimens();
 
         mBatteryLevelView = (BatteryLevelTextView) statusBar.findViewById(R.id.battery_level);
@@ -549,6 +554,12 @@ public class StatusBarIconController extends StatusBarIconList implements Tunabl
                 isInArea(mTintArea, mBatteryMeterView) ? mDarkIntensity : 0);
         mClockController.setTextColor(mTintArea, mIconTint);
         mBatteryLevelView.setTextColor(getTint(mTintArea, mBatteryLevelView, mIconTint));
+		if (Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.STATUS_BAR_FDS_LOGO_COLOR, 0xFFFFFFFF,
+                UserHandle.USER_CURRENT) == 0xFFFFFFFF) {
+            mFdsLogoRight.setImageTintList(ColorStateList.valueOf(mIconTint));
+            mFdsLogoLeft.setImageTintList(ColorStateList.valueOf(mIconTint));
+        }
     }
 
     public void appTransitionPending() {

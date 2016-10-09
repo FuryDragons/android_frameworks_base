@@ -410,6 +410,14 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
 
     int mMaxAllowedKeyguardNotifications;
 
+	
+    // FuryDragons logo
+    private boolean mFdsLogo;
+    private int mFdsLogoColor;
+    private ImageView mFdsLogoRight;
+    private ImageView mFdsLogoLeft;
+    private int mFdsLogoStyle;
+
     boolean mExpandedVisible;
 
     private int mNavigationBarWindowState = WINDOW_STATE_SHOWING;
@@ -468,6 +476,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         }
     };
 
+	private SettingsObserver mSettingsObserver;
+
     class SettingsObserver extends UserContentObserver {
         SettingsObserver(Handler handler) {
             super(handler);
@@ -485,6 +495,15 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                     Settings.System.SCREEN_BRIGHTNESS_MODE), false, this, UserHandle.USER_ALL);
             resolver.registerContentObserver(CMSettings.System.getUriFor(
                     CMSettings.System.NAVBAR_LEFT_IN_LANDSCAPE), false, this, UserHandle.USER_ALL);
+			resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.STATUS_BAR_FDS_LOGO),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.STATUS_BAR_FDS_LOGO_COLOR),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.STATUS_BAR_FDS_LOGO_STYLE),
+                    false, this, UserHandle.USER_ALL);
             update();
         }
 
@@ -512,7 +531,18 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                         CMSettings.System.NAVBAR_LEFT_IN_LANDSCAPE, 0, UserHandle.USER_CURRENT) == 1;
                 mNavigationBarView.setLeftInLandscape(navLeftInLandscape);
             }
-        }
+        
+            mFdsLogoStyle = Settings.System.getIntForUser(
+                    resolver, Settings.System.STATUS_BAR_FDS_LOGO_STYLE, 0,
+                    UserHandle.USER_CURRENT);
+            mFdsLogo = Settings.System.getIntForUser(resolver,
+                    Settings.System.STATUS_BAR_FDS_LOGO, 0, mCurrentUserId) == 1;
+            mFdsLogoColor = Settings.System.getIntForUser(resolver,
+                    Settings.System.STATUS_BAR_FDS_LOGO_COLOR, 0xFFFFFFFF, mCurrentUserId);
+            mFdsLogoLeft = (ImageView) mStatusBarView.findViewById(R.id.left_fds_logo);
+            mFdsLogoRight = (ImageView) mStatusBarView.findViewById(R.id.fds_logo);
+            showFdsLogo(mFdsLogo, mFdsLogoColor, mFdsLogoStyle);
+		}
     }
 
     class DevForceNavbarObserver extends UserContentObserver {
@@ -846,8 +876,10 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             // no window manager? good luck with that
         }
 
-        SettingsObserver observer = new SettingsObserver(mHandler);
-        observer.observe();
+        if (mSettingsObserver == null) {
+            mSettingsObserver = new SettingsObserver(new Handler());
+        }
+        mSettingsObserver.observe();
 
         // Lastly, call to the icon policy to install/update all the icons.
         mIconPolicy = new PhoneStatusBarPolicy(mContext, mIconController, mCastController,
@@ -3898,7 +3930,31 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             }
         }, cancelAction, afterKeyguardGone);
     }
+	
+    public void showFdsLogo(boolean show, int color, int style) {
+        if (mStatusBarView == null) return;
+        if (!show) {
+            mFdsLogoRight.setVisibility(View.GONE);
+            mFdsLogoLeft.setVisibility(View.GONE);
+            return;
+        }
+        if (color != 0xFFFFFFFF) {
+            mFdsLogoRight.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            mFdsLogoLeft.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+        } else {
+            mFdsLogoRight.clearColorFilter();
+            mFdsLogoLeft.clearColorFilter();
+        }
+        if (style == 0) {
+            mFdsLogoRight.setVisibility(View.GONE);
+            mFdsLogoLeft.setVisibility(View.VISIBLE);
+        } else {
+            mFdsLogoLeft.setVisibility(View.GONE);
+            mFdsLogoRight.setVisibility(View.VISIBLE);
+        }
+    }
 
+	
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
