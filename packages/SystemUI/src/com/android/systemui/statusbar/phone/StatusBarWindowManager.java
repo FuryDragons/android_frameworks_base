@@ -22,8 +22,10 @@ import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
 import android.graphics.Point;
+import android.database.ContentObserver;
 import android.graphics.PixelFormat;
 import android.os.RemoteException;
+import android.os.Handler;
 import android.os.SystemProperties;
 import android.os.Trace;
 import android.provider.Settings;
@@ -39,7 +41,6 @@ import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.RemoteInputController;
 import com.android.systemui.statusbar.StatusBarState;
 import com.android.systemui.statusbar.policy.KeyguardMonitor;
-import com.android.systemui.tuner.TunerService;
 
 import cyanogenmod.providers.CMSettings;
 
@@ -50,20 +51,8 @@ import java.lang.reflect.Field;
 /**
  * Encapsulates all logic for the status bar window state management.
  */
-public class StatusBarWindowManager implements RemoteInputController.Callback,
-        TunerService.Tunable, KeyguardMonitor.Callback {
-
-    private static final String ACCELEROMETER_ROTATION =
-            "system:" + Settings.System.ACCELEROMETER_ROTATION;
-    private static final String LOCKSCREEN_ROTATION =
-            "cmsystem:" + CMSettings.System.LOCKSCREEN_ROTATION;
-    private static final String LOCK_SCREEN_BLUR_ENABLED =
-            "cmsecure:" + CMSettings.Secure.LOCK_SCREEN_BLUR_ENABLED;
-
-    private static final int TYPE_LAYER_MULTIPLIER = 10000; // Refer to WindowManagerService.TYPE_LAYER_MULTIPLIER
-    private static final int TYPE_LAYER_OFFSET = 1000;      // Refer to WindowManagerService.TYPE_LAYER_OFFSET
-    private static final int STATUS_BAR_LAYER = 16 * TYPE_LAYER_MULTIPLIER + TYPE_LAYER_OFFSET;
-
+public class StatusBarWindowManager implements RemoteInputController.Callback {
+	
     private static final String TAG = "StatusBarWindowManager";
 
     private final Context mContext;
@@ -140,12 +129,10 @@ public class StatusBarWindowManager implements RemoteInputController.Callback,
         if (isBlurSupported) {
             final Point xy = getDisplayDimensions(mWindowManager);
             mBlurLayer = new BlurLayer(xy.x, xy.y, STATUS_BAR_LAYER - 2, "KeyGuard");
-            TunerService.get(mContext).addTunable(this, LOCK_SCREEN_BLUR_ENABLED);
         }
 
-        TunerService.get(mContext).addTunable(this,
-                ACCELEROMETER_ROTATION,
-                LOCKSCREEN_ROTATION);
+        SettingsObserver observer = new SettingsObserver(new Handler());
+        observer.observe(mContext);
     }
 
     private void applyKeyguardFlags(State state) {
@@ -503,21 +490,32 @@ public class StatusBarWindowManager implements RemoteInputController.Callback,
         }
     }
 
-    @Override
-    public void onTuningChanged(String key, String newValue) {
-        switch (key) {
-            case ACCELEROMETER_ROTATION:
-            case LOCKSCREEN_ROTATION:
-                mKeyguardScreenRotation = shouldEnableKeyguardScreenRotation();
-                break;
-            case LOCK_SCREEN_BLUR_ENABLED:
-                mKeyguardBlurEnabled = newValue != null && Integer.parseInt(newValue) == 1;
-                break;
-            default:
-                return;
+    private class SettingsObserver extends ContentObserver {
+        public SettingsObserver(Handler handler) {
+            super(handler);
         }
-        // Update the state
-        apply(mCurrentState);
+
+        public void observe(Context context) {
+            context.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
+                    false,
+                    this);
+            context.getContentResolver().registerContentObserver(
+                    CMSettings.System.getUriFor(CMSettings.System.LOCKSCREEN_ROTATION),
+                    false,
+                    this);
+        }
+
+        public void unobserve(Context context) {
+            context.getContentResolver().unregisterContentObserver(this);
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            mKeyguardScreenRotation = shouldEnableKeyguardScreenRotation();
+            // update the state
+            apply(mCurrentState);
+        }
     }
 
     @Override
