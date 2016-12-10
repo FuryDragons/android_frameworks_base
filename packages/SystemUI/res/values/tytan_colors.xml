@@ -16,6 +16,11 @@
 -->
 <resources>
 
+    <!-- Floating action button -->
+    <color name="fab_color">#ffffffff</color>
+    <color name="fab_color_ripple">#ff7a7a7a</color>
+    <color name="floating_action_button_icon_color">@*android:color/accent_material_dark</color>
+	
     <!-- Volume panel border coler -->
     <color name="volume_panel_border_color">#ff2962ff</color><!-- blue A700 -->
 

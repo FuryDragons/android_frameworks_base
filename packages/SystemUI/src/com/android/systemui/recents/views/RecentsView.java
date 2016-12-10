@@ -164,7 +164,9 @@ public class RecentsView extends FrameLayout {
                 }
             });
             addView(mStackActionButton);
-			}
+			
+			    }
+			
         mEmptyView = (TextView) inflater.inflate(R.layout.recents_empty, this, false);
         addView(mEmptyView);
  
@@ -176,7 +178,7 @@ public class RecentsView extends FrameLayout {
                  	EventBus.getDefault().send(new DismissAllTaskViewsEvent());
                  	updateMemoryStatus();
              		}
-	}
+	    }
 	
 	LayoutInflater inflater = LayoutInflater.from(mContext);
          float cornerRadius = mContext.getResources().getDimensionPixelSize(

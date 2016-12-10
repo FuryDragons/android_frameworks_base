@@ -18,6 +18,11 @@
     <!-- Status bar battery level text color -->
     <color name="status_bar_battery_level_text_color">#ffffff</color>
 
+    <!-- Floating action button -->
+    <color name="fab_color">#ffffffff</color>
+    <color name="fab_color_ripple">#ff7a7a7a</color>
+    <color name="floating_action_button_icon_color">@*android:color/accent_material_dark</color>
+	
     <!-- Expanded Status Bar Weather Text Colors -->
     <color name="status_bar_temperature_text_color">#FFFFFFFF</color>
     <color name="status_bar_temperature_location_text_color">#FFFFFFFF</color>
