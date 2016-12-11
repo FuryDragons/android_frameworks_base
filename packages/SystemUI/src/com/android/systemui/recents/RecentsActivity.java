@@ -442,12 +442,6 @@ public class RecentsActivity extends Activity implements ViewTreeObserver.OnPreD
 		
 		boolean showClearAllRecents = Settings.System.getIntForUser(getContentResolver(),
                  Settings.System.SHOW_CLEAR_ALL_RECENTS, 0, UserHandle.USER_CURRENT) != 0;
- 		
- 		if(showClearAllRecents) {
- 		findViewById(R.id.floating_action_button).setVisibility(View.VISIBLE);
-     	} else {
-		findViewById(R.id.floating_action_button).setVisibility(View.GONE);
-		}
 
         // Keep track of the total stack task count
         int taskCount = mRecentsView.getStack().getTaskCount();
