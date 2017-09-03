@@ -562,6 +562,7 @@ public class StatusBarIconController extends StatusBarIconList implements Tunabl
                 UserHandle.USER_CURRENT) == 0xFFFFFFFF) {
             mFdsLogoRight.setImageTintList(ColorStateList.valueOf(mIconTint));
             mFdsLogoLeft.setImageTintList(ColorStateList.valueOf(mIconTint));
+        }
     }
 
     public void appTransitionPending() {
